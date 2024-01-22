@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "6WB4Rx7J8Q0C9vYKJq7aNAa+hvpoHamsm2SZ2VX2ToEXc9Px8pyLYBx6bBY5Qgr0tk4miphCM0Gk08z4OavSFQ==",
+  "dgSpecHash": "Mk4PXHXU/z6+h7OLXP3G9nPNi0/FO1wliVuj0DcgbuUsmNzivk3GnegDN9glNxRqud+0zYuSpz+hzFynBhVjig==",
   "success": true,
-  "projectFilePath": "C:\\Users\\alpha\\Documents\\CURSOS\\CURSO_EFC6\\repos\\Entity-Framework-Core-De-Verdad\\6.0\\Modulo 9 - Avanzado\\Inicio\\EFCorePeliculas\\EFCorePeliculas\\EFCorePeliculas.csproj",
+  "projectFilePath": "C:\\Users\\alpha\\Documents\\CURSOS\\CURSO_EFC6\\EFCorePeliculas\\EFCorePeliculas\\EFCorePeliculas.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\alpha\\.nuget\\packages\\automapper\\10.1.1\\automapper.10.1.1.nupkg.sha512",
     "C:\\Users\\alpha\\.nuget\\packages\\automapper.extensions.microsoft.dependencyinjection\\8.1.1\\automapper.extensions.microsoft.dependencyinjection.8.1.1.nupkg.sha512",
