@@ -23,6 +23,8 @@ namespace EFCorePeliculas.Migrations
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder, 1L, 1);
 
+            modelBuilder.HasSequence<int>("FacturaNumero", "Factura");
+
             modelBuilder.Entity("EFCorePeliculas.Entidades.Actor", b =>
                 {
                     b.Property<int>("Id")
@@ -209,16 +211,16 @@ namespace EFCorePeliculas.Migrations
                         {
                             Id = 2,
                             CineId = 4,
-                            FechaFin = new DateTime(2024, 1, 27, 0, 0, 0, 0, DateTimeKind.Local),
-                            FechaInicio = new DateTime(2024, 1, 22, 0, 0, 0, 0, DateTimeKind.Local),
+                            FechaFin = new DateTime(2024, 2, 10, 0, 0, 0, 0, DateTimeKind.Local),
+                            FechaInicio = new DateTime(2024, 2, 5, 0, 0, 0, 0, DateTimeKind.Local),
                             PorcentajeDescuento = 15m
                         },
                         new
                         {
                             Id = 1,
                             CineId = 1,
-                            FechaFin = new DateTime(2024, 1, 29, 0, 0, 0, 0, DateTimeKind.Local),
-                            FechaInicio = new DateTime(2024, 1, 22, 0, 0, 0, 0, DateTimeKind.Local),
+                            FechaFin = new DateTime(2024, 2, 12, 0, 0, 0, 0, DateTimeKind.Local),
+                            FechaInicio = new DateTime(2024, 2, 5, 0, 0, 0, 0, DateTimeKind.Local),
                             PorcentajeDescuento = 10m
                         });
                 });
@@ -231,8 +233,18 @@ namespace EFCorePeliculas.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"), 1L, 1);
 
+                    b.Property<int>("FacturaNumero")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasDefaultValueSql("NEXT VALUE FOR factura.FacturaNumero");
+
                     b.Property<DateTime>("FechaCreacion")
                         .HasColumnType("date");
+
+                    b.Property<byte[]>("Version")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion");
 
                     b.HasKey("Id");
 
@@ -247,6 +259,9 @@ namespace EFCorePeliculas.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"), 1L, 1);
 
+                    b.Property<int>("Cantidad")
+                        .HasColumnType("int");
+
                     b.Property<int>("FacturaId")
                         .HasColumnType("int");
 
@@ -256,6 +271,12 @@ namespace EFCorePeliculas.Migrations
 
                     b.Property<string>("Producto")
                         .HasColumnType("nvarchar(max)");
+
+                    b.Property<decimal>("Total")
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)")
+                        .HasComputedColumnSql("Precio * Cantidad", false);
 
                     b.HasKey("Id");
 
@@ -284,9 +305,20 @@ namespace EFCorePeliculas.Migrations
                         .HasDefaultValueSql("GetDate()");
 
                     b.Property<string>("Nombre")
+                        .IsConcurrencyToken()
                         .IsRequired()
                         .HasMaxLength(150)
                         .HasColumnType("nvarchar(150)");
+
+                    b.Property<DateTime>("PeriodEnd")
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("datetime2")
+                        .HasColumnName("PeriodEnd");
+
+                    b.Property<DateTime>("PeriodStart")
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("datetime2")
+                        .HasColumnName("PeriodStart");
 
                     b.Property<string>("UsuarioCreacion")
                         .HasMaxLength(150)
@@ -302,7 +334,18 @@ namespace EFCorePeliculas.Migrations
                         .IsUnique()
                         .HasFilter("EstaBorrado = 'false'");
 
-                    b.ToTable("Generos");
+                    b.ToTable("Generos", (string)null);
+
+                    b.ToTable(tb => tb.IsTemporal(ttb =>
+                        {
+                            ttb
+                                .HasPeriodStart("PeriodStart")
+                                .HasColumnName("PeriodStart");
+                            ttb
+                                .HasPeriodEnd("PeriodEnd")
+                                .HasColumnName("PeriodEnd");
+                        }
+                    ));
 
                     b.HasData(
                         new
@@ -499,7 +542,7 @@ namespace EFCorePeliculas.Migrations
                         {
                             Id = 5,
                             EnCartelera = true,
-                            FechaEstreno = new DateTime(2024, 1, 22, 0, 0, 0, 0, DateTimeKind.Local),
+                            FechaEstreno = new DateTime(2024, 2, 5, 0, 0, 0, 0, DateTimeKind.Local),
                             PosterURL = "https://upload.wikimedia.org/wikipedia/en/5/50/The_Matrix_Resurrections.jpg",
                             Titulo = "The Matrix Resurrections"
                         });
@@ -739,10 +782,6 @@ namespace EFCorePeliculas.Migrations
 
             modelBuilder.Entity("EFCorePeliculas.Entidades.SinLlaves.PeliculaConConteos", b =>
                 {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
                     b.Property<int>("CantidadActores")
                         .HasColumnType("int");
 
@@ -752,12 +791,13 @@ namespace EFCorePeliculas.Migrations
                     b.Property<int>("CantidadGeneros")
                         .HasColumnType("int");
 
+                    b.Property<int>("Id")
+                        .HasColumnType("int");
+
                     b.Property<string>("Titulo")
                         .HasColumnType("nvarchar(max)");
 
-                    b.HasKey("Id");
-
-                    b.ToSqlQuery("SeLeCt Id, Titulo,\r\n(Select count(*)\r\nfrom GeneroPelicula\r\nWHERE PeliculasId = Peliculas.Id) as CantidadGeneros,\r\n(Select count(distinct ElCine)\r\nFROM PeliculaSalaDeCine\r\nINNER JOIN SalasDeCine\r\nON SalasDeCine.Id = PeliculaSalaDeCine.SalasDeCineId\r\nWHERE PeliculasId = Peliculas.Id) as CantidadCines,\r\n(\r\nSelect count(*)\r\nFROM PeliculasActores\r\nwhere PeliculaId = Peliculas.Id) as CantidadActores\r\nFROM Peliculas");
+                    b.ToTable((string)null);
                 });
 
             modelBuilder.Entity("GeneroPelicula", b =>

@@ -18,6 +18,8 @@ namespace EFCorePeliculas.Servicios
 
             CreateMap<Genero, GeneroDTO>();
 
+            CreateMap<GeneroActualizacionDTO, Genero>();
+
             // Sin projectTo
             CreateMap<Pelicula, PeliculaDTO>()
                 .ForMember(dto => dto.Cines, ent => ent.MapFrom(prop => prop.SalasDeCine.Select(s => s.Cine)))
