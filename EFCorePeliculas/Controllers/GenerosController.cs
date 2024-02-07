@@ -1,4 +1,6 @@
-﻿using EFCorePeliculas.Entidades;
+﻿using AutoMapper;
+using EFCorePeliculas.DTOs;
+using EFCorePeliculas.Entidades;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
@@ -10,10 +12,12 @@ namespace EFCorePeliculas.Controllers
     public class GenerosController : ControllerBase
     {
         private readonly ApplicationDbContext context;
+        private readonly IMapper mapper;
 
-        public GenerosController(ApplicationDbContext context)
+        public GenerosController(ApplicationDbContext context, IMapper mapper)
         {
             this.context = context;
+            this.mapper = mapper;
         }
 
         [HttpGet]
@@ -64,7 +68,53 @@ namespace EFCorePeliculas.Controllers
             var id = (int)outputId.Value;
             return Ok(id);
         }
-         
+
+        /// <summary>
+        /// Método que consulta datos históricos
+        /// </summary>
+        /// <param name="id"></param>
+        /// <returns></returns>
+        [HttpGet("consulta-historico/{id:int}")]
+        public async Task<ActionResult<Genero>> GetHistorico(int id)
+        {
+            var genero = await context.Generos.AsTracking().FirstOrDefaultAsync(g => g.Identificador == id);
+
+            if (genero is null)
+            {
+                return NotFound();
+            }
+
+            var fechaCreacion = context.Entry(genero).Property<DateTime>("FechaCreacion").CurrentValue;
+            var perioStart = context.Entry(genero).Property<DateTime>("PeriodStart").CurrentValue;
+            var perioEnd = context.Entry(genero).Property<DateTime>("PeriodEnd").CurrentValue;
+
+            return Ok(new
+            {
+                Id = genero.Identificador,
+                Nombre = genero.Nombre,
+                fechaCreacion,
+                perioStart,
+                perioEnd
+            });
+        }
+
+        [HttpGet("TemporalAll/{id:int}")]
+        public async Task<ActionResult> GetTemporalAll(int id)
+        {
+            var generos = await context.Generos
+                .TemporalAll()
+                .AsTracking()
+                .Where(g => g.Identificador == id)
+                .Select(g => new { id = g.Identificador, 
+                                   Nombre = g.Nombre, 
+                                   PeriodStart = EF.Property<DateTime>(g, "PeriodStart"),
+                                   PeriodEnd = EF.Property<DateTime>(g, "PeriodEnd")})
+                .ToListAsync();
+
+            return Ok(generos);
+
+        }
+
         [HttpGet("{id:int}")]
         public async Task<ActionResult<Genero>> Get(int id)
         {
@@ -125,10 +175,17 @@ namespace EFCorePeliculas.Controllers
             return Ok();
         }
 
+        /// <summary>
+        /// Método que actualiza un genero
+        /// </summary>
+        /// <param name="genero"></param>
+        /// <returns></returns>
         [HttpPut]
-        public async Task<ActionResult> Put(Genero genero)
+        public async Task<ActionResult> Put(GeneroActualizacionDTO generoActualizacionDTO)
         {
+            var genero = mapper.Map<Genero>(generoActualizacionDTO);
             context.Update(genero);
+            context.Entry(genero).Property(g => g.Nombre).OriginalValue = generoActualizacionDTO.Nombre_Original;
             await context.SaveChangesAsync();
             return Ok();
         }

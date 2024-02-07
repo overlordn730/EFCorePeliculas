@@ -7,11 +7,18 @@ namespace EFCorePeliculas.Entidades.Configuraciones
     {
         public void Configure(EntityTypeBuilder<Genero> builder)
         {
+
+            builder.ToTable(name: "Generos", opciones => opciones.IsTemporal());
+
+            builder.Property("PeriodStart").HasColumnType("datetime2");
+            builder.Property("PeriodEnd").HasColumnType("datetime2");
+
             builder.HasKey(prop => prop.Identificador);
             builder.Property(prop => prop.Nombre)
                 .HasMaxLength(150)
                 .IsRequired();
-
+                //.IsConcurrencyToken();
+          
             builder.HasQueryFilter(g => !g.EstaBorrado);
 
             builder.HasIndex(g => g.Nombre).IsUnique().HasFilter("EstaBorrado = 'false'");

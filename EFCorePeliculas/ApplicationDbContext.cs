@@ -1,5 +1,6 @@
 ﻿using EFCorePeliculas.Entidades;
 using EFCorePeliculas.Entidades.Configuraciones;
+using EFCorePeliculas.Entidades.Funciones;
 using EFCorePeliculas.Entidades.Seeding;
 using EFCorePeliculas.Entidades.SinLlaves;
 using EFCorePeliculas.Servicios;
@@ -69,6 +70,7 @@ namespace EFCorePeliculas
             }
         }
 
+
         protected override void ConfigureConventions(ModelConfigurationBuilder configurationBuilder)
         {
             configurationBuilder.Properties<DateTime>().HaveColumnType("date");
@@ -76,7 +78,11 @@ namespace EFCorePeliculas
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
+            Escalares.RegistrarFunciones(modelBuilder);
+
             base.OnModelCreating(modelBuilder);
+
+            modelBuilder.HasSequence<int>("FacturaNumero", "Factura");
 
             modelBuilder.ApplyConfigurationsFromAssembly(Assembly.GetExecutingAssembly());
             SeedingModuloConsulta.Seed(modelBuilder);
@@ -89,20 +95,22 @@ namespace EFCorePeliculas
 
             //modelBuilder.Entity<PeliculaConConteos>().HasNoKey().ToView("PeliculasConConteos");
 
-            modelBuilder.Entity<PeliculaConConteos>().ToSqlQuery(@"SeLeCt Id, Titulo,
-(Select count(*)
-from GeneroPelicula
-WHERE PeliculasId = Peliculas.Id) as CantidadGeneros,
-(Select count(distinct ElCine)
-FROM PeliculaSalaDeCine
-INNER JOIN SalasDeCine
-ON SalasDeCine.Id = PeliculaSalaDeCine.SalasDeCineId
-WHERE PeliculasId = Peliculas.Id) as CantidadCines,
-(
-Select count(*)
-FROM PeliculasActores
-where PeliculaId = Peliculas.Id) as CantidadActores
-FROM Peliculas");
+            //modelBuilder.Entity<PeliculaConConteos>().ToSqlQuery(@"SeLeCt Id, Titulo,
+            //                                                    (Select count(*)
+            //                                                    from GeneroPelicula
+            //                                                    WHERE PeliculasId = Peliculas.Id) as CantidadGeneros,
+            //                                                    (Select count(distinct ElCine)
+            //                                                    FROM PeliculaSalaDeCine
+            //                                                    INNER JOIN SalasDeCine
+            //                                                    ON SalasDeCine.Id = PeliculaSalaDeCine.SalasDeCineId
+            //                                                    WHERE PeliculasId = Peliculas.Id) as CantidadCines,
+            //                                                    (
+            //                                                    Select count(*)
+            //                                                    FROM PeliculasActores
+            //                                                    where PeliculaId = Peliculas.Id) as CantidadActores
+            //                                                    FROM Peliculas");
+            modelBuilder.Entity<PeliculaConConteos>().HasNoKey().ToTable(name: null);
+            modelBuilder.HasDbFunction(() => PeliculaConConteos(0));
 
             foreach (var tipoEntidad in modelBuilder.Model.GetEntityTypes())
             {
@@ -141,6 +149,18 @@ FROM Peliculas");
             modelBuilder.Entity<Merchandising>().HasData(merch1);
             modelBuilder.Entity<PeliculaAlquilable>().HasData(pelicula1);
 
+        }
+
+        // Si tenemos varias funciones utilizar la clase Funciones.Escalares.cs
+        [DbFunction]
+        public int FacturaDetalleSuma(int facturaId)
+        {
+            return 0;
+        }
+
+        public IQueryable<PeliculaConConteos> PeliculaConConteos(int peliculaId)
+        {
+            return FromExpression(() => PeliculaConConteos(peliculaId));
         }
 
         public DbSet<Genero> Generos { get; set; }
